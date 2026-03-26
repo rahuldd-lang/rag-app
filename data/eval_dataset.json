@@ -1,0 +1,77 @@
+{
+  "_comment": "Evaluation dataset for the TechCorp Annual Report 2023 sample PDF. Each item has a question, expected answer, and topic tags for metric analysis.",
+  "source_document": "TechCorp_Annual_Report_2023.pdf",
+  "version": "1.0",
+  "questions": [
+    {
+      "id": 1,
+      "question": "What was TechCorp's total revenue in fiscal year 2023?",
+      "expected_answer": "TechCorp's total revenue in fiscal year 2023 was $2.84 billion, representing a 23% increase over 2022.",
+      "topic": "revenue",
+      "difficulty": "easy"
+    },
+    {
+      "id": 2,
+      "question": "Which division had the highest year-over-year revenue growth in 2023?",
+      "expected_answer": "The AI Platform division had the highest year-over-year revenue growth in 2023 at 217%, growing from $120 million in 2022 to $380 million in 2023.",
+      "topic": "revenue_by_division",
+      "difficulty": "medium"
+    },
+    {
+      "id": 3,
+      "question": "What was TechCorp's net income and net margin in 2023?",
+      "expected_answer": "TechCorp's net income in 2023 was $412 million with a 14.5% net margin.",
+      "topic": "profitability",
+      "difficulty": "easy"
+    },
+    {
+      "id": 4,
+      "question": "How much did TechCorp invest in R&D in 2023, and what percentage of revenue did it represent?",
+      "expected_answer": "TechCorp invested $520 million in R&D in 2023, which represented 18.3% of total revenue — the highest in company history.",
+      "topic": "expenses",
+      "difficulty": "medium"
+    },
+    {
+      "id": 5,
+      "question": "What was TechCorp's revenue in Asia-Pacific in 2023 and how fast did it grow?",
+      "expected_answer": "TechCorp's Asia-Pacific revenue was $540 million in 2023, representing 19% of total revenue and growing 41% year-over-year — the fastest-growing region.",
+      "topic": "geographic_breakdown",
+      "difficulty": "medium"
+    },
+    {
+      "id": 6,
+      "question": "What is TechCorp's revenue guidance for fiscal year 2024?",
+      "expected_answer": "TechCorp's revenue guidance for FY2024 is $3.35–$3.50 billion, representing approximately 18–23% year-over-year growth.",
+      "topic": "outlook",
+      "difficulty": "easy"
+    },
+    {
+      "id": 7,
+      "question": "How did TechCorp's quarterly revenue trend throughout 2023?",
+      "expected_answer": "TechCorp showed consistent acceleration: Q1 $612M, Q2 $682M, Q3 $745M, Q4 $801M, with gross margin expanding from 68% in Q1 to 72% in Q4.",
+      "topic": "quarterly_performance",
+      "difficulty": "medium"
+    },
+    {
+      "id": 8,
+      "question": "What was TechCorp's employee headcount at the end of 2023 and how did it change from 2022?",
+      "expected_answer": "TechCorp had 17,800 employees at the end of 2023, up from 14,200 in 2022.",
+      "topic": "headcount",
+      "difficulty": "easy"
+    },
+    {
+      "id": 9,
+      "question": "What is TechCorp's planned capital expenditure for 2024 and how will it be allocated?",
+      "expected_answer": "TechCorp plans $380 million in capital expenditure for 2024: 60% for data center expansion in Mumbai, São Paulo, and Frankfurt, and 40% for on-premise infrastructure refresh for the Enterprise Software division.",
+      "topic": "capex",
+      "difficulty": "hard"
+    },
+    {
+      "id": 10,
+      "question": "What was TechCorp's customer retention rate and Net Revenue Retention in 2023?",
+      "expected_answer": "TechCorp's customer retention rate was 94% in 2023, and Net Revenue Retention (NRR) reached 118%, indicating strong upsell momentum.",
+      "topic": "customer_metrics",
+      "difficulty": "medium"
+    }
+  ]
+}

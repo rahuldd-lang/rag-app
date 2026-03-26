@@ -1,0 +1,19 @@
+# Secrets
+.env
+
+# ChromaDB vector store (large, rebuilt from PDFs)
+chroma_db/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# macOS
+.DS_Store
+
+# Streamlit cache
+.streamlit/secrets.toml
