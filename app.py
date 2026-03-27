@@ -40,15 +40,11 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dotenv import load_dotenv
 
 # ── Suppress noisy library warnings ─────────────────────────────────────────
 warnings.filterwarnings("ignore", category=FutureWarning)
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
-
-# ── Load .env (Anthropic key, optional) ─────────────────────────────────────
-load_dotenv()
 
 # ── Page config (must be first Streamlit call) ───────────────────────────────
 st.set_page_config(
@@ -58,34 +54,35 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Custom CSS for a polished look ───────────────────────────────────────────
+# ── Custom CSS for a polished look (light theme) ─────────────────────────────
 st.markdown("""
 <style>
   /* Metric cards */
   div[data-testid="metric-container"] {
-      background: #1e293b;
-      border: 1px solid #334155;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
       border-radius: 8px;
       padding: 12px 16px;
   }
   /* Source expander styling */
   .source-chunk {
-      background: #0f172a;
+      background: #f1f5f9;
       border-left: 3px solid #2563eb;
       padding: 8px 12px;
       border-radius: 0 4px 4px 0;
       margin-bottom: 8px;
       font-size: 13px;
+      color: #1e293b;
   }
   /* Score badge */
   .score-badge {
       display: inline-block;
-      background: #2563eb22;
-      border: 1px solid #2563eb;
+      background: #dbeafe;
+      border: 1px solid #93c5fd;
       border-radius: 12px;
       padding: 2px 10px;
       font-size: 12px;
-      color: #60a5fa;
+      color: #1d4ed8;
   }
 </style>
 """, unsafe_allow_html=True)
@@ -100,7 +97,7 @@ st.markdown("""
 def init_session():
     """Initialise keys in st.session_state on first run."""
     defaults = {
-        "api_key":       os.getenv("ANTHROPIC_API_KEY", ""),
+        "api_key":       "",   # Always empty — user must provide their own key
         "doc_processor": None,
         "rag_pipeline":  None,
         "data_extractor":None,
@@ -765,7 +762,7 @@ def tab_evaluation():
         dist_df = pd.DataFrame(chart_data)
         dist_fig = px.bar(
             dist_df, x="Question ID", y="Score", color="Metric",
-            barmode="group", template="plotly_dark",
+            barmode="group", template="plotly_white",
             color_discrete_sequence=px.colors.qualitative.Set2,
             title="Evaluation Scores per Question",
             labels={"Score": "Score (0–1)"},
@@ -811,7 +808,7 @@ def _build_radar_chart(ar: float, fa: float, cp: float, to: float) -> go.Figure:
             radialaxis=dict(visible=True, range=[0, 1], tickfont_size=10),
             angularaxis=dict(tickfont_size=12),
         ),
-        template="plotly_dark",
+        template="plotly_white",
         title="Evaluation Metrics Radar",
         showlegend=False,
         height=420,

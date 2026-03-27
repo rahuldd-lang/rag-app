@@ -23,7 +23,7 @@ import plotly.graph_objects as go
 logger = logging.getLogger(__name__)
 
 # ── Shared style constants ────────────────────────────────────────────────────
-PLOTLY_TEMPLATE = "plotly_dark"
+PLOTLY_TEMPLATE = "plotly_white"
 COLOR_SEQUENCE  = px.colors.qualitative.Set2   # Colorblind-friendly palette
 FONT_FAMILY     = "Inter, sans-serif"
 
@@ -214,8 +214,8 @@ class Visualizer:
         """Apply consistent axis / legend / font styling to all figures."""
         fig.update_layout(
             font_family=FONT_FAMILY,
-            plot_bgcolor="rgba(0,0,0,0)",
-            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="#ffffff",
+            paper_bgcolor="#ffffff",
             legend=dict(
                 orientation="h",
                 yanchor="bottom",
@@ -225,8 +225,8 @@ class Visualizer:
             ),
             margin=dict(l=40, r=40, t=60, b=40),
         )
-        fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="rgba(128,128,128,0.2)")
-        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="rgba(128,128,128,0.2)")
+        fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor="#e2e8f0")
+        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="#e2e8f0")
 
     @staticmethod
     def _empty_figure(message: str) -> go.Figure:
