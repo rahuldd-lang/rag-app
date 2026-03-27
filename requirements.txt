@@ -29,6 +29,9 @@ numpy>=1.24.0
 # ML utilities (cosine similarity for evaluation)
 scikit-learn>=1.3.0
 
+# Required by pandas Styler.background_gradient in evaluation tab
+matplotlib>=3.7.0
+
 # Anthropic SDK
 anthropic>=0.23.0
 

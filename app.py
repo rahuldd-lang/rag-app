@@ -536,7 +536,7 @@ def tab_visualizations():
         # ── Main chart ────────────────────────────────────────────────────────
         fig = viz.build(extracted)
         if fig:
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         else:
             st.warning("Could not render a chart for this data.")
 
@@ -544,7 +544,7 @@ def tab_visualizations():
         with st.expander("📊 View raw data table"):
             df = viz.data_to_table(extracted)
             if df is not None:
-                st.dataframe(df, use_container_width=True)
+                st.dataframe(df, width="stretch")
             else:
                 st.json(extracted)
 
@@ -574,7 +574,7 @@ def tab_visualizations():
                 if "error" not in ext:
                     fig = viz.build(ext)
                     if fig:
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, width="stretch")
                         if "insight" in ext:
                             st.caption(f"💡 {ext['insight']}")
 
@@ -628,7 +628,7 @@ def tab_evaluation():
             {"ID": q["id"], "Question": q["question"], "Difficulty": q.get("difficulty", "")}
             for q in eval_data["questions"]
         ]
-        st.dataframe(pd.DataFrame(q_rows), use_container_width=True)
+        st.dataframe(pd.DataFrame(q_rows), width="stretch")
         st.caption(f"Source: {eval_data.get('source_document', 'unknown')} · {len(eval_data['questions'])} questions")
 
     # ── Run evaluation ─────────────────────────────────────────────────────────
@@ -735,7 +735,7 @@ def tab_evaluation():
 
         # ── Radar / spider chart ──────────────────────────────────────────────
         radar_fig = _build_radar_chart(avg_ar, avg_fa, avg_cp, avg_to)
-        st.plotly_chart(radar_fig, use_container_width=True)
+        st.plotly_chart(radar_fig, width="stretch")
 
         # ── Per-question table ────────────────────────────────────────────────
         st.subheader("Per-Question Results")
@@ -750,7 +750,7 @@ def tab_evaluation():
                 subset=["answer_relevancy","faithfulness","context_precision","token_overlap_f1"],
                 cmap="RdYlGn", vmin=0, vmax=1,
             ),
-            use_container_width=True,
+            width="stretch",
         )
 
         # ── Metric distribution bar chart ─────────────────────────────────────
@@ -768,7 +768,7 @@ def tab_evaluation():
             labels={"Score": "Score (0–1)"},
         )
         dist_fig.update_layout(yaxis_range=[0, 1.1])
-        st.plotly_chart(dist_fig, use_container_width=True)
+        st.plotly_chart(dist_fig, width="stretch")
 
         # ── Detailed answers expander ─────────────────────────────────────────
         with st.expander("🔍 View generated vs. expected answers"):
