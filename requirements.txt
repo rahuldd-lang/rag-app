@@ -10,8 +10,9 @@ langchain-core>=0.1.40
 # Vector store
 chromadb>=0.4.24
 
-# Embeddings (local, no API key needed)
-sentence-transformers>=2.6.0
+# Embeddings — ChromaDB's built-in ONNX backend (no torch/torchvision needed)
+# sentence-transformers removed: causes torchvision import error on Python 3.14
+onnxruntime>=1.17.0
 
 # BM25 sparse retrieval
 rank_bm25>=0.2.2

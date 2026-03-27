@@ -5,7 +5,7 @@ Handles PDF ingestion, text chunking, embedding, and ChromaDB indexing.
 
 Design decisions:
 - Chunk size 800 / overlap 150: balances context richness vs. retrieval precision
-- sentence-transformers/all-MiniLM-L6-v2: lightweight, no API key needed, good quality
+- ChromaDB DefaultEmbeddingFunction (ONNX all-MiniLM-L6-v2): no torch needed
 - ChromaDB with persistent storage: survives app restarts
 """
 
@@ -18,7 +18,7 @@ from typing import List, Tuple
 import pypdf
 import pdfplumber
 import chromadb
-from chromadb.utils import embedding_functions
+from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,8 @@ logger = logging.getLogger(__name__)
 # ── Constants ────────────────────────────────────────────────────────────────
 CHUNK_SIZE = 800          # Characters per chunk
 CHUNK_OVERLAP = 150       # Overlap to preserve sentence continuity
-EMBED_MODEL = "all-MiniLM-L6-v2"   # ~80MB, runs locally
+# DefaultEmbeddingFunction uses ChromaDB's built-in ONNX all-MiniLM-L6-v2
+# — no torch or torchvision dependency required
 COLLECTION_NAME = "rag_documents"
 
 
@@ -44,18 +45,17 @@ class DocumentProcessor:
         The active collection holding all document chunks.
     splitter : RecursiveCharacterTextSplitter
         LangChain splitter that respects sentence/paragraph boundaries.
-    embed_fn : SentenceTransformerEmbeddingFunction
-        ChromaDB-native wrapper around sentence-transformers.
+    embed_fn : DefaultEmbeddingFunction
+        ChromaDB's built-in ONNX embedding function.
     """
 
     def __init__(self, persist_dir: str = "./chroma_db"):
         self.persist_dir = persist_dir
         Path(persist_dir).mkdir(parents=True, exist_ok=True)
 
-        # Embedding function (runs locally, no API key needed)
-        self.embed_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name=EMBED_MODEL
-        )
+        # ChromaDB's built-in ONNX embedding function (all-MiniLM-L6-v2)
+        # Lighter than sentence-transformers: no torch/torchvision needed
+        self.embed_fn = DefaultEmbeddingFunction()
 
         # Persistent ChromaDB client
         self.client = chromadb.PersistentClient(path=persist_dir)

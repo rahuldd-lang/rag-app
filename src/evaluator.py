@@ -41,13 +41,10 @@ from typing import List, Optional
 
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-from sentence_transformers import SentenceTransformer
+from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
 from anthropic import Anthropic
 
 logger = logging.getLogger(__name__)
-
-# Shared embedding model (same model as document_processor.py for consistency)
-EMBED_MODEL = "all-MiniLM-L6-v2"
 
 
 class Evaluator:
@@ -67,7 +64,7 @@ class Evaluator:
         self.client = Anthropic(api_key=api_key)
         self.model  = model
         # Lazy-loaded to avoid slowing down app startup
-        self._embed_model: Optional[SentenceTransformer] = None
+        self._embed_fn: Optional[DefaultEmbeddingFunction] = None
 
     # ── Public API ───────────────────────────────────────────────────────────
 
@@ -180,9 +177,9 @@ class Evaluator:
 
         Returns float in [0, 1].
         """
-        model = self._get_embed_model()
-        q_emb = model.encode([question])
-        a_emb = model.encode([answer])
+        ef = self._get_embed_fn()
+        q_emb = np.array(ef([question]))
+        a_emb = np.array(ef([answer]))
         score = float(cosine_similarity(q_emb, a_emb)[0][0])
         # Cosine can be slightly negative; clip to [0, 1]
         return max(0.0, min(1.0, score))
@@ -283,11 +280,11 @@ class Evaluator:
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
-    def _get_embed_model(self) -> SentenceTransformer:
-        """Lazy-load the sentence transformer (avoids startup cost)."""
-        if self._embed_model is None:
-            self._embed_model = SentenceTransformer(EMBED_MODEL)
-        return self._embed_model
+    def _get_embed_fn(self) -> DefaultEmbeddingFunction:
+        """Lazy-load ChromaDB's ONNX embedding function (avoids startup cost)."""
+        if self._embed_fn is None:
+            self._embed_fn = DefaultEmbeddingFunction()
+        return self._embed_fn
 
     @staticmethod
     def _token_overlap(reference: str, hypothesis: str) -> float:
