@@ -70,7 +70,7 @@ class DataExtractor:
         Claude model to use (haiku is fast enough for structured extraction).
     """
 
-    def __init__(self, api_key: str, model: str = "claude-3-5-haiku-20241022"):
+    def __init__(self, api_key: str, model: str = "claude-haiku-4-5-20251001"):
         self.client = Anthropic(api_key=api_key)
         self.model = model
 

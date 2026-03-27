@@ -51,14 +51,14 @@ class RAGPipeline:
     api_key : str
         Anthropic API key.
     model : str
-        Claude model identifier (default: claude-3-5-haiku-20241022).
+        Claude model identifier (default: claude-haiku-4-5-20251001).
     """
 
     def __init__(
         self,
         doc_processor: DocumentProcessor,
         api_key: str,
-        model: str = "claude-3-5-haiku-20241022",
+        model: str = "claude-haiku-4-5-20251001",
     ):
         self.proc = doc_processor
         self.client = Anthropic(api_key=api_key)
