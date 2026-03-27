@@ -94,14 +94,11 @@ class DocumentProcessor:
         content_hash = hashlib.md5(pdf_bytes).hexdigest()[:8]
         doc_id = f"{Path(filename).stem}_{content_hash}"
 
-        # Skip re-indexing if document is already in the collection
-        existing = self.collection.get(where={"doc_id": doc_id}, limit=1)
+        # Skip re-indexing if document is already in the collection (single query)
+        existing = self.collection.get(where={"doc_id": doc_id})
         if existing["ids"]:
-            existing_count = len(
-                self.collection.get(where={"doc_id": doc_id})["ids"]
-            )
-            logger.info("Document '%s' already indexed (%d chunks).", filename, existing_count)
-            return existing_count, doc_id
+            logger.info("Document '%s' already indexed (%d chunks).", filename, len(existing["ids"]))
+            return len(existing["ids"]), doc_id
 
         # Extract text + page numbers for metadata
         pages = self._extract_text_with_pages(pdf_bytes)

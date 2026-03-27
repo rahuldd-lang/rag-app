@@ -158,9 +158,12 @@ class RAGPipeline:
         ChromaDB automatically embeds the query with the same model used at indexing time.
         """
         where_filter = {"doc_id": doc_id} if doc_id else None
+        total = self.proc.collection.count()
+        if total == 0:
+            return []
         results = self.proc.collection.query(
             query_texts=[query],
-            n_results=min(n, self.proc.collection.count() or 1),
+            n_results=min(n, total),
             where=where_filter,
             include=["documents", "metadatas", "distances"],
         )

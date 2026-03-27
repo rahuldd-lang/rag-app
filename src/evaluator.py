@@ -73,6 +73,7 @@ class Evaluator:
         question: str,
         answer: str,
         context_chunks: List[dict],
+        expected_answer: str = "",
     ) -> dict:
         """
         Compute all three metrics for a single RAG response.
@@ -89,20 +90,31 @@ class Evaluator:
         Returns
         -------
         dict with keys:
-            "answer_relevancy"   – float [0, 1]
-            "faithfulness"       – float [0, 1]
-            "context_precision"  – float [0, 1]
-            "faithfulness_raw"   – int 1-5 (raw LLM score)
+            "answer_relevancy"          – float [0, 1]
+            "faithfulness"              – float [0, 1]
+            "faithfulness_raw"          – int 1-5 (raw LLM score)
+            "context_precision"         – float [0, 1]
+            "context_recall"            – float [0, 1]  (None if no expected_answer)
+            "context_recall_supported"  – int
+            "context_recall_total"      – int
         """
         ar  = self.answer_relevancy(question, answer)
         fp  = self.faithfulness(answer, context_chunks)
         cp  = self.context_precision(question, context_chunks)
+        cr  = (
+            self.context_recall(expected_answer, context_chunks)
+            if expected_answer
+            else {"score": None, "supported": 0, "total": 0}
+        )
 
         return {
-            "answer_relevancy":  ar,
-            "faithfulness":      fp["score"],
-            "faithfulness_raw":  fp["raw"],
-            "context_precision": cp,
+            "answer_relevancy":         ar,
+            "faithfulness":             fp["score"],
+            "faithfulness_raw":         fp["raw"],
+            "context_precision":        cp,
+            "context_recall":           cr["score"],
+            "context_recall_supported": cr["supported"],
+            "context_recall_total":     cr["total"],
         }
 
     def run_eval_dataset(
@@ -277,6 +289,78 @@ class Evaluator:
             logger.error("Context precision judge failed: %s", e)
 
         return 0.5  # Neutral fallback
+
+    # ── Metric 4: Context Recall ──────────────────────────────────────────────
+
+    def context_recall(self, expected_answer: str, context_chunks: List[dict]) -> dict:
+        """
+        What fraction of the statements in the expected (reference) answer are
+        supported by the retrieved context?
+
+        Algorithm:
+          1. Claude decomposes `expected_answer` into atomic factual statements.
+          2. For each statement, Claude checks if the context contains enough
+             information to support it.
+          3. Recall = supported_statements / total_statements
+
+        Intuition: high recall means the retriever surfaced all the information
+        needed to answer correctly. Low recall means relevant chunks were missed.
+        Complements Context Precision: precision penalises noise, recall penalises gaps.
+
+        Requires a reference answer — only run during eval dataset scoring,
+        not on live chat queries.
+
+        Parameters
+        ----------
+        expected_answer : str
+            Ground-truth reference answer from the eval dataset.
+        context_chunks : list of dict
+            Retrieved chunks (each dict has at least a "text" key).
+
+        Returns
+        -------
+        dict with keys:
+            "score"     – float [0, 1]
+            "supported" – int   (number of supported statements)
+            "total"     – int   (total number of statements decomposed)
+        """
+        if not expected_answer or not context_chunks:
+            return {"score": 0.0, "supported": 0, "total": 0}
+
+        context_text = "\n\n".join(
+            c.get("text", c) if isinstance(c, dict) else str(c)
+            for c in context_chunks[:6]
+        )
+
+        prompt = (
+            f"Reference answer: {expected_answer}\n\n"
+            f"Context:\n{context_text}\n\n"
+            "1. Break the reference answer into individual factual statements (one per statement).\n"
+            "2. For each statement, mark supported=1 if the context contains enough information "
+            "to support it, or supported=0 if the context does not.\n"
+            "Return ONLY valid JSON (no markdown):\n"
+            '{"statements": [{"text": "<statement>", "supported": <1 or 0>}]}'
+        )
+
+        try:
+            resp = self.client.messages.create(
+                model=self.model,
+                max_tokens=600,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            raw = resp.content[0].text.strip()
+            raw = re.sub(r"^```(?:json)?\s*", "", raw)
+            raw = re.sub(r"\s*```$", "", raw)
+            data = json.loads(raw)
+            statements = data.get("statements", [])
+            if not statements:
+                return {"score": 0.0, "supported": 0, "total": 0}
+            supported = sum(int(s.get("supported", 0)) for s in statements)
+            total = len(statements)
+            return {"score": round(supported / total, 4), "supported": supported, "total": total}
+        except Exception as e:
+            logger.error("context_recall failed: %s", e)
+            return {"score": None, "supported": 0, "total": 0}  # None = judge failed, not a real score
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 

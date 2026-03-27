@@ -153,22 +153,22 @@ def get_evaluator(api_key: str):
 def render_sidebar():
     """Render the left sidebar with API key input and PDF uploader."""
     with st.sidebar:
-        st.title("📊 RAG Analyzer")
+        st.title("📊 RAG Document Analyzer")
         st.caption("Two-stage hybrid retrieval · Claude · Plotly")
 
         # ── API Key ──────────────────────────────────────────────────────────
         st.subheader("⚙️ Configuration")
         api_key_input = st.text_input(
-            "Anthropic API Key",
+            "Application Access Key",
             value=st.session_state.api_key,
             type="password",
-            help="Get your key at console.anthropic.com",
+            help="Contact the app owner to get your access key",
         )
         if api_key_input:
             st.session_state.api_key = api_key_input
 
         if not st.session_state.api_key:
-            st.warning("Enter your API key to get started.")
+            st.warning("Enter your access key to get started.")
             st.stop()
 
         # Persist directory for ChromaDB
@@ -185,6 +185,7 @@ def render_sidebar():
 
         # ── Sample data shortcut ─────────────────────────────────────────────
         sample_path = Path("data/TechCorp_Annual_Report_2023.pdf")
+        use_sample = False  # Default — avoids NameError if PDF doesn't exist yet
         if not sample_path.exists():
             if st.button("🔧 Generate Sample PDF", help="Creates a synthetic annual report for demo"):
                 with st.spinner("Generating sample PDF…"):
@@ -291,11 +292,90 @@ def _generate_sample_pdf():
 
 def tab_overview():
     """
-    Shows document statistics, key extracted metrics (KPIs), and a word-level
-    topic analysis chart.
+    Home page: hero banner, GenAI framework metadata, pipeline architecture,
+    indexed document stats, AI-extracted KPIs, and suggested chart topics.
     """
-    st.header("📋 Document Overview")
+    # ── Hero banner ───────────────────────────────────────────────────────────
+    st.markdown("""
+<div style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #3b82f6 100%);
+            border-radius: 14px; padding: 36px 32px; margin-bottom: 28px; text-align: center;">
+  <h1 style="color: white; margin: 0 0 8px 0; font-size: 2.2rem; font-weight: 700; letter-spacing: -0.5px;">
+    📊 RAG Document Analyzer
+  </h1>
+  <p style="color: #bfdbfe; margin: 0 0 20px 0; font-size: 1.05rem;">
+    Upload PDFs · Ask Questions · Extract &amp; Visualize Data · Evaluate Quality
+  </p>
+  <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+    <span style="background:rgba(255,255,255,0.15); color:white; border-radius:20px;
+                 padding:5px 14px; font-size:13px; font-weight:500;">🔗 LangChain</span>
+    <span style="background:rgba(255,255,255,0.15); color:white; border-radius:20px;
+                 padding:5px 14px; font-size:13px; font-weight:500;">🤖 Anthropic Claude</span>
+    <span style="background:rgba(255,255,255,0.15); color:white; border-radius:20px;
+                 padding:5px 14px; font-size:13px; font-weight:500;">🗄️ ChromaDB</span>
+    <span style="background:rgba(255,255,255,0.15); color:white; border-radius:20px;
+                 padding:5px 14px; font-size:13px; font-weight:500;">📈 Plotly</span>
+    <span style="background:rgba(255,255,255,0.15); color:white; border-radius:20px;
+                 padding:5px 14px; font-size:13px; font-weight:500;">🔍 BM25 + RRF</span>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
+    # ── GenAI Framework metadata ──────────────────────────────────────────────
+    st.subheader("🧠 GenAI Framework")
+    fw_cols = st.columns(4)
+
+    fw_cards = [
+        ("🔗 Orchestration", "LangChain", "Text splitting, pipeline orchestration, and prompt management"),
+        ("🤖 Language Model", "Claude Haiku 4.5", "Anthropic claude-haiku-4-5-20251001 for generation, data extraction, and LLM-as-judge evaluation"),
+        ("🗄️ Vector Store", "ChromaDB + ONNX", "Persistent vector store with all-MiniLM-L6-v2 embeddings via ONNX runtime — no PyTorch required"),
+        ("🔍 Retrieval", "Hybrid BM25 + Dense", "Two-stage retrieval: BM25 sparse search + ONNX dense search, fused with Reciprocal Rank Fusion (RRF)"),
+    ]
+    for col, (icon_title, name, desc) in zip(fw_cols, fw_cards):
+        col.markdown(f"""
+<div style="background:#f0f7ff; border:1px solid #bfdbfe; border-radius:10px;
+            padding:16px; height:160px;">
+  <div style="font-weight:700; color:#1e40af; margin-bottom:6px; font-size:14px;">{icon_title}</div>
+  <div style="font-weight:600; color:#1e293b; font-size:15px; margin-bottom:8px;">{name}</div>
+  <div style="color:#475569; font-size:12px; line-height:1.5;">{desc}</div>
+</div>
+""", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ── Pipeline architecture ─────────────────────────────────────────────────
+    with st.expander("⚙️ Pipeline Architecture", expanded=False):
+        col_a, col_b = st.columns([1, 1])
+        with col_a:
+            st.markdown("""
+**Stage 1 — Candidate Retrieval**
+- `1a` Dense semantic search via ChromaDB ONNX embeddings
+- `1b` BM25 keyword search (rank_bm25)
+
+**Stage 2 — Score Fusion**
+- Reciprocal Rank Fusion (RRF) merges both ranked lists
+- No cross-encoder or additional model required
+
+**Generation**
+- Top-k fused chunks sent to Claude as numbered citations
+- Strict "cite evidence only" system prompt reduces hallucination
+""")
+        with col_b:
+            st.markdown("""
+**Evaluation Metrics**
+| Metric | Method |
+|--------|--------|
+| Context Precision | LLM-as-judge |
+| Context Recall | LLM-as-judge |
+| Faithfulness | LLM-as-judge |
+| Answer Relevancy | Cosine similarity |
+| Token Overlap F1 | Lexical baseline |
+
+**Evaluation Dataset**: 10 Q&A pairs with expected answers targeting the TechCorp Annual Report sample.
+""")
+
+    st.divider()
+
+    # ── Indexed documents ────────────────────────────────────────────────────
     persist_dir = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
     proc = get_doc_processor(persist_dir)
     docs = proc.get_all_documents()
@@ -304,25 +384,26 @@ def tab_overview():
         st.info("No documents indexed. Upload a PDF or generate the sample report in the sidebar.")
         return
 
-    # ── Document cards ────────────────────────────────────────────────────────
-    st.subheader("Indexed Documents")
-    cols = st.columns(min(len(docs), 3))
+    st.subheader("📄 Indexed Documents")
+    doc_cols = st.columns(min(len(docs), 3))
     for i, doc in enumerate(docs):
-        with cols[i % 3]:
+        with doc_cols[i % 3]:
             st.markdown(f"""
-<div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:14px;margin-bottom:8px">
-  <b>{doc['filename']}</b><br>
-  <span style="color:#94a3b8;font-size:13px">
+<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px;
+            padding:16px; margin-bottom:8px;">
+  <div style="font-weight:600; color:#1e293b; font-size:14px; margin-bottom:4px;">
+    📄 {doc['filename']}
+  </div>
+  <div style="color:#64748b; font-size:13px;">
     {doc['chunk_count']} chunks &nbsp;·&nbsp; {doc['page_count']} pages
-  </span>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
     # ── KPI extraction ────────────────────────────────────────────────────────
-    st.subheader("📌 Key Statistics (AI-Extracted)")
+    st.subheader("📌 AI-Extracted Key Statistics")
     extractor = get_data_extractor(st.session_state.api_key)
 
-    # Pick the active document or the first available
     target_doc = docs[0] if not st.session_state.active_doc_id else next(
         (d for d in docs if d["doc_id"] == st.session_state.active_doc_id), docs[0]
     )
@@ -333,7 +414,6 @@ def tab_overview():
 
     stats = kpi_result.get("stats", [])
     if stats:
-        # Display as metric grid (3 per row)
         rows = [stats[i:i+3] for i in range(0, len(stats), 3)]
         for row in rows:
             cols = st.columns(3)
@@ -352,10 +432,15 @@ def tab_overview():
         suggestions = extractor.suggest_visualizations(doc_text[:3000])
 
     if suggestions:
-        st.write("The document contains data suitable for these charts:")
-        for s in suggestions:
-            st.markdown(f"- {s}")
-        st.caption("→ Use the **Visualizations** tab to generate these charts.")
+        sug_cols = st.columns(min(len(suggestions), 3))
+        for i, s in enumerate(suggestions):
+            sug_cols[i % 3].markdown(f"""
+<div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px;
+            padding:12px 14px; margin-bottom:8px; font-size:13px; color:#166534;">
+  📊 {s}
+</div>
+""", unsafe_allow_html=True)
+        st.caption("→ Switch to the **Visualizations** tab to generate any of these charts.")
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -606,7 +691,8 @@ def tab_evaluation():
 |--------|------|-----------------|
 | **Answer Relevancy** | Quantitative | Cosine similarity between question and answer embeddings. High score → answer stays on topic. |
 | **Faithfulness** | LLM-as-judge (0–1) | Claude rates whether every claim in the answer is supported by the retrieved context. Detects hallucination. |
-| **Context Precision** | LLM-as-judge (0–1) | Fraction of retrieved chunks that actually contain relevant information. High score → retrieval is precise. |
+| **Context Precision** | LLM-as-judge (0–1) | Fraction of retrieved chunks that contain relevant information. High score → retrieval is precise (low noise). |
+| **Context Recall** | LLM-as-judge (0–1) | Fraction of reference-answer statements supported by the context. High score → retrieval captured all needed info. |
 | **Token Overlap F1** | Quantitative baseline | Token-level F1 between expected and generated answers (requires ground truth). |
 """)
 
@@ -648,6 +734,7 @@ def tab_evaluation():
             st.caption("Previous results shown below. Click Run to refresh.")
 
     if run_btn:
+        from src.evaluator import Evaluator as Ev   # Imported once, used in loop below
         rag       = get_rag_pipeline(st.session_state.api_key, persist_dir)
         evaluator = get_evaluator(st.session_state.api_key)
 
@@ -656,14 +743,6 @@ def tab_evaluation():
             **eval_data,
             "questions": eval_data["questions"][:n_questions],
         }
-
-        import tempfile
-        # Write subset to a temp file so evaluator can load it
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as tmp:
-            json.dump(eval_subset, tmp)
-            tmp_path = tmp.name
 
         progress_bar = st.progress(0, text="Evaluating…")
         results = []
@@ -683,8 +762,8 @@ def tab_evaluation():
                     question=item["question"],
                     answer=rag_result["answer"],
                     context_chunks=rag_result["sources"],
+                    expected_answer=item.get("expected_answer", ""),
                 )
-                from src.evaluator import Evaluator as Ev
                 overlap = Ev._token_overlap(
                     item.get("expected_answer", ""),
                     rag_result["answer"],
@@ -698,6 +777,7 @@ def tab_evaluation():
                     "answer_relevancy":   round(metrics["answer_relevancy"], 3),
                     "faithfulness":       round(metrics["faithfulness"], 3),
                     "context_precision":  round(metrics["context_precision"], 3),
+                    "context_recall":     round(metrics["context_recall"], 3) if metrics["context_recall"] is not None else "N/A",
                     "token_overlap_f1":   round(overlap, 3),
                 })
             except Exception as e:
@@ -715,39 +795,47 @@ def tab_evaluation():
             st.error("All evaluations failed. Check your API key and indexed documents.")
             return
 
-        # Aggregate metrics
+        # Aggregate metrics (exclude "N/A" recall values from average)
         avg_ar = sum(r["answer_relevancy"] for r in valid) / len(valid)
         avg_fa = sum(r["faithfulness"]      for r in valid) / len(valid)
         avg_cp = sum(r["context_precision"] for r in valid) / len(valid)
         avg_to = sum(r["token_overlap_f1"]  for r in valid) / len(valid)
+        recall_vals = [r["context_recall"] for r in valid if isinstance(r.get("context_recall"), float)]
+        avg_cr = sum(recall_vals) / len(recall_vals) if recall_vals else 0.0
 
         # ── Summary metric cards ──────────────────────────────────────────────
         st.subheader("📊 Aggregate Results")
-        c1, c2, c3, c4 = st.columns(4)
+        c1, c2, c3, c4, c5 = st.columns(5)
         c1.metric("Answer Relevancy",  f"{avg_ar:.3f}",
                   help="Embedding cosine similarity [0–1]. ≥0.7 is good.")
         c2.metric("Faithfulness",       f"{avg_fa:.3f}",
                   help="LLM-as-judge grounding score [0–1]. ≥0.75 is good.")
         c3.metric("Context Precision",  f"{avg_cp:.3f}",
                   help="Fraction of retrieved chunks that are relevant [0–1].")
-        c4.metric("Token Overlap F1",   f"{avg_to:.3f}",
+        c4.metric("Context Recall",     f"{avg_cr:.3f}",
+                  help="Fraction of reference-answer statements supported by context [0–1].")
+        c5.metric("Token Overlap F1",   f"{avg_to:.3f}",
                   help="Lexical F1 vs. expected answer (0–1 baseline metric).")
 
         # ── Radar / spider chart ──────────────────────────────────────────────
-        radar_fig = _build_radar_chart(avg_ar, avg_fa, avg_cp, avg_to)
+        radar_fig = _build_radar_chart(avg_ar, avg_fa, avg_cp, avg_cr, avg_to)
         st.plotly_chart(radar_fig, width="stretch")
 
         # ── Per-question table ────────────────────────────────────────────────
         st.subheader("Per-Question Results")
         df = pd.DataFrame(valid)[
             ["id", "question", "difficulty",
-             "answer_relevancy", "faithfulness", "context_precision", "token_overlap_f1"]
+             "answer_relevancy", "faithfulness", "context_precision", "context_recall", "token_overlap_f1"]
         ]
 
-        # Color-code the numeric columns
+        # Color-code numeric columns (skip context_recall if it contains "N/A" strings)
+        numeric_cols = ["answer_relevancy", "faithfulness", "context_precision", "token_overlap_f1"]
+        if all(isinstance(v, float) for v in df["context_recall"]):
+            numeric_cols.insert(3, "context_recall")
+
         st.dataframe(
             df.style.background_gradient(
-                subset=["answer_relevancy","faithfulness","context_precision","token_overlap_f1"],
+                subset=numeric_cols,
                 cmap="RdYlGn", vmin=0, vmax=1,
             ),
             width="stretch",
@@ -757,8 +845,10 @@ def tab_evaluation():
         st.subheader("Score Distribution by Question")
         chart_data = []
         for r in valid:
-            for metric in ["answer_relevancy", "faithfulness", "context_precision"]:
-                chart_data.append({"Question ID": r["id"], "Metric": metric, "Score": r[metric]})
+            for metric in ["answer_relevancy", "faithfulness", "context_precision", "context_recall"]:
+                val = r.get(metric)
+                if isinstance(val, float):
+                    chart_data.append({"Question ID": r["id"], "Metric": metric, "Score": val})
         dist_df = pd.DataFrame(chart_data)
         dist_fig = px.bar(
             dist_df, x="Question ID", y="Score", color="Metric",
@@ -782,15 +872,15 @@ def tab_evaluation():
                 st.divider()
 
 
-def _build_radar_chart(ar: float, fa: float, cp: float, to: float) -> go.Figure:
+def _build_radar_chart(ar: float, fa: float, cp: float, cr: float, to: float) -> go.Figure:
     """
-    Build a radar (spider) chart summarising all four evaluation metrics.
+    Build a radar (spider) chart summarising all five evaluation metrics.
     """
     categories = [
         "Answer Relevancy", "Faithfulness",
-        "Context Precision", "Token Overlap F1",
+        "Context Precision", "Context Recall", "Token Overlap F1",
     ]
-    values = [ar, fa, cp, to]
+    values = [ar, fa, cp, cr, to]
     # Close the polygon
     categories_closed = categories + [categories[0]]
     values_closed     = values + [values[0]]

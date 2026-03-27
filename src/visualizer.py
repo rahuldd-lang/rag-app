@@ -196,9 +196,15 @@ class Visualizer:
         for series in series_list:
             name = series.get("name", "")
             for point in series.get("values", []):
+                raw_val = point.get("value", 0)
+                try:
+                    # Strip commas/currency symbols that Claude sometimes includes
+                    numeric = float(str(raw_val).replace(",", "").replace("$", "").strip())
+                except (ValueError, TypeError):
+                    numeric = 0.0
                 rows.append({
                     "label": str(point.get("label", "")),
-                    "value": float(point.get("value", 0)),
+                    "value": numeric,
                     "series": name,
                 })
         df = pd.DataFrame(rows)
